@@ -1,0 +1,119 @@
+service: serverless-db-test
+# app and org for use with dashboard.serverless.com
+
+org: antonsheviardou
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+frameworkVersion: "3"
+
+custom:
+  settings:
+    DYNAMODB_TABLE: serverless-dynamo-db-test
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  profile: serverlessUser
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: "arn:aws:dynamodb:${aws:region}:*:table/${self:custom.settings.DYNAMODB_TABLE}"
+  environment: ${self:custom.settings}
+    
+
+
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+
+# you can add statements to the Lambda function's IAM Role here
+#  iam:
+#    role:
+#      statements:
+#        - Effect: "Allow"
+#          Action:
+#            - "s3:ListBucket"
+#          Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
+#        - Effect: "Allow"
+#          Action:
+#            - "s3:PutObject"
+#          Resource:
+#            Fn::Join:
+#              - ""
+#              - - "arn:aws:s3:::"
+#                - "Ref" : "ServerlessDeploymentBucket"
+#                - "/*"
+
+# you can define service wide environment variables here
+#  environment:
+#    variable1: value1
+
+# you can add packaging information here
+#package:
+#  patterns:
+#    - '!exclude-me.js'
+#    - '!exclude-me-dir/**'
+#    - include-me.js
+#    - include-me-dir/**
+
+functions:
+  create:
+    handler: db/create.create
+    events:
+      - httpApi:
+          path: /db
+          method: post
+
+  list:
+    handler: db/list.list
+    events:
+      - httpApi:
+          path: /db
+          method: get
+
+  get:
+    handler: db/get.get
+    events:
+      - httpApi:
+          path: /db/{id}
+          method: get
+
+  update:
+    handler: db/update.update
+    events:
+      - httpApi:
+          path: /db/{id}
+          method: put
+
+  delete:
+    handler: db/delete.delete
+    events:
+      - httpApi:
+          path: /db/{id}
+          method: delete
+
+resources:
+  Resources:
+    AWSDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:custom.settings.DYNAMODB_TABLE}
